@@ -345,6 +345,8 @@ class RemoteAccount(HttpMixin):
         :param combine_stderr: If True, return output from both stderr and stdout of the remote process.
         :param timeout_sec: Set timeout on blocking reads/writes. Default None. For more details see
             http://docs.paramiko.org/en/2.0/api/channel.html#paramiko.channel.Channel.settimeout
+        :param encoding: If None, return the output as a unencoded byte type, otherwise encode output to str
+            with the defined encoding type
 
         :return: The stdout output from the ssh command.
         :raise RemoteCommandError: If ``allow_fail`` is False and the command returns a non-zero exit status
