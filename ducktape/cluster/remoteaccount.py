@@ -365,7 +365,7 @@ class RemoteAccount(HttpMixin):
         try:
             stdoutdata = stdout.read()
             if encoding is not None:
-                stdoutdata = stdoutdata.encoding(encoding)
+                stdoutdata = stdoutdata.encode(encoding)
             exit_status = stdin.channel.recv_exit_status()
             if exit_status != 0:
                 if not allow_fail:
