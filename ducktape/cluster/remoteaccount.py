@@ -120,7 +120,6 @@ class RemoteAccount(HttpMixin):
     Each operating system has its own RemoteAccount implementation.
     """
 
-
     def __init__(self, ssh_config, externally_routable_ip=None, logger=None):
         # Instance of RemoteAccountSSHConfig - use this instead of a dict, because we need the entire object to
         # be hashable
@@ -350,7 +349,6 @@ class RemoteAccount(HttpMixin):
         :return: The stdout output from the ssh command.
         :raise RemoteCommandError: If ``allow_fail`` is False and the command returns a non-zero exit status
         """
-        
         self._log(logging.DEBUG, "Running ssh command: %s" % cmd)
 
         client = self.ssh_client
