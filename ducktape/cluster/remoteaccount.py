@@ -120,6 +120,11 @@ class RemoteAccount(HttpMixin):
     Each operating system has its own RemoteAccount implementation.
     """
 
+    SSH_OUTPUT_MODES = {
+        'r': 'w',
+        'rb': 'wb'
+    }
+
     def __init__(self, ssh_config, externally_routable_ip=None, logger=None):
         # Instance of RemoteAccountSSHConfig - use this instead of a dict, because we need the entire object to
         # be hashable
@@ -336,7 +341,7 @@ class RemoteAccount(HttpMixin):
 
         return SSHOutputIter(output_generator, stdout)
 
-    def ssh_output(self, cmd, allow_fail=False, combine_stderr=True, timeout_sec=None):
+    def ssh_output(self, cmd, allow_fail=False, combine_stderr=True, timeout_sec=None, mode='r'):
         """Runs the command via SSH and captures the output, returning it as a string.
 
         :param cmd: The remote ssh command.
@@ -349,6 +354,9 @@ class RemoteAccount(HttpMixin):
         :return: The stdout output from the ssh command.
         :raise RemoteCommandError: If ``allow_fail`` is False and the command returns a non-zero exit status
         """
+        if mode not in self.SSH_OUTPUT_MODES:
+            raise Exception('unknown output mode {}, acceptable modes are {}'.format(mode, self.SSH_OUTPUT_MODES))
+        
         self._log(logging.DEBUG, "Running ssh command: %s" % cmd)
 
         client = self.ssh_client
@@ -358,7 +366,7 @@ class RemoteAccount(HttpMixin):
         chan.exec_command(cmd)
         chan.set_combine_stderr(combine_stderr)
 
-        stdin = chan.makefile('wb', -1)  # set bufsize to -1
+        stdin = chan.makefile(self.SSH_OUTPUT_MODES[mode], -1)  # set bufsize to -1
         stdout = chan.makefile('r', -1)
         stderr = chan.makefile_stderr('r', -1)
 

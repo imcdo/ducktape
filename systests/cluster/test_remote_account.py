@@ -437,8 +437,8 @@ class RemoteAccountTest(Test):
         ssh_output = node.account.ssh_output(cmd, combine_stderr=True)
         bad_ssh_output = node.account.ssh_output(cmd, combine_stderr=False)  # Same command, but don't capture stderr
 
-        assert ssh_output == b"\n".join([str(i).encode('utf-8') for i in range(1, 6)]) + b"\n", ssh_output
-        assert bad_ssh_output == b"", bad_ssh_output
+        assert ssh_output == "\n".join([str(i) for i in range(1, 6)]) + "\n", ssh_output
+        assert bad_ssh_output == "", bad_ssh_output
 
     @cluster(num_nodes=1)
     def test_ssh_capture(self):
