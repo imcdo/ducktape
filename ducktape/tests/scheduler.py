@@ -131,7 +131,7 @@ class GreedyTestScheduler(AbstractTestScheduler):
             If scheduler is empty, or no test can currently be scheduled, return None.
         """
         # return the test using the largest number of nodes less than or equal to the nodes available
-        for tc in self._test_context_iter:
+        for tc in self._test_context_iter():
             if self.cluster.available().nodes.can_remove_spec(tc.expected_cluster_spec):
                 return tc
 
