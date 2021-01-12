@@ -154,5 +154,5 @@ class GreedyTestScheduler(AbstractTestScheduler):
 
         self._cost_test_dict[tc.expected_num_nodes].remove(tc)
         if self._cost_test_dict[tc.expected_num_nodes] == set():
-            self._cost_test_dict.remove(tc.expected_num_nodes)
+            self._cost_test_dict.pop(tc.expected_num_nodes)
         return tc
