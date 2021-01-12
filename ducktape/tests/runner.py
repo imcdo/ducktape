@@ -30,7 +30,7 @@ from ducktape.tests.result import TestResults
 from ducktape.utils.terminal_size import get_terminal_size
 from ducktape.tests.event import ClientEventFactory, EventResponseFactory
 from ducktape.cluster.finite_subcluster import FiniteSubcluster
-from ducktape.tests.scheduler import TestScheduler
+from ducktape.tests.scheduler import TestScheduler, GreedyTestScheduler
 from ducktape.tests.result import FAIL, TestResult
 from ducktape.tests.reporter import SimpleFileSummaryReporter, HTMLSummaryReporter, JSONReporter
 from ducktape.utils import persistence
@@ -100,7 +100,10 @@ class TestRunner(object):
         self.exit_first = self.session_context.exit_first
 
         self.main_process_pid = os.getpid()
-        self.scheduler = TestScheduler(tests, self.cluster)
+        if self.max_parallel > 1:
+            self.scheduler = GreedyTestScheduler(tests, self.cluster)
+        else:
+            self.scheduler = TestScheduler(tests, self.cluster)
 
         self.test_counter = 1
         self.total_tests = len(self.scheduler)
@@ -185,6 +188,7 @@ class TestRunner(object):
         self._log(logging.INFO, "running %d tests..." % len(self.scheduler))
         while self._ready_to_trigger_more_tests or self._expect_client_requests:
             try:
+                self._log(logging.INFO, f"number of nodes available after allocating all test {len(self.cluster.available().nodes)}")
                 while self._ready_to_trigger_more_tests:
                     next_test_context = self.scheduler.next()
                     self._preallocate_subcluster(next_test_context)

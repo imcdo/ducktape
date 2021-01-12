@@ -13,13 +13,11 @@
 # limitations under the License.
 
 
-class TestScheduler(object):
-    """This class tracks tests which are scheduled to run, and provides an ordering based on the current cluster state.
+from collections import defaultdict
+from re import L
 
-    The ordering is "on-demand"; calling next returns the largest cluster user which fits in the currently
-    available cluster nodes.
-    """
 
+class AbstractTestScheduler(object):
     def __init__(self, test_contexts, cluster):
         self.cluster = cluster
 
@@ -33,6 +31,28 @@ class TestScheduler(object):
                 self._test_context_list.append(test_context)
             else:
                 self.unschedulable.append(test_context)
+
+    def __len__(self):
+        raise NotImplementedError()
+
+    def __iter__(self):
+        return self
+    
+    def peek(self):
+        raise NotImplementedError()
+
+    def next(self):
+        raise NotImplementedError()
+
+class LargestTestScheduler(AbstractTestScheduler):
+    """This class tracks tests which are scheduled to run, and provides an ordering based on the current cluster state.
+
+    The ordering is "on-demand"; calling next returns the largest cluster user which fits in the currently
+    available cluster nodes.
+    """
+
+    def __init__(self, test_contexts, cluster):
+        super().__init__(test_contexts, cluster)
         self._sort_test_context_list()
 
     def __len__(self):
@@ -80,4 +100,61 @@ class TestScheduler(object):
             raise RuntimeError("No tests can currently be scheduled.")
 
         self._test_context_list.remove(tc)
+        return tc
+
+class GreedyTestScheduler(TestScheduler):
+    def __init__(self, test_contexts, cluster):
+        super().__init__(test_contexts, cluster)
+
+        self._cost_test_dict = defaultdict(set)
+        for test in self.test_contexts:
+            self._cost_test_dict[test.expected_num_nodes].add(test)
+
+    def __len__(self):
+        """Number of tests currently in the scheduler"""
+        return len(self._test_context_list)
+
+    @property
+    def free_nodes(self):
+        return len(self.cluster.available().nodes)
+
+    def _test_context_iter(self):
+        keys = sorted((k for k in self._cost_test_dict.keys() if k <= self.free_nodes), 
+                                         reverse=True)
+
+        for k in keys:
+            for test in self._cost_test_dict[k]:
+                yield test
+
+    def peek(self):
+        """Locate and return the next object to be scheduled, without removing it internally.
+
+        :return test_context for the next test to be scheduled.
+            If scheduler is empty, or no test can currently be scheduled, return None.
+        """
+        # return the test using the largest number of nodes less than or equal to the nodes available
+        for tc in self._test_context_iter:
+            if self.cluster.available().nodes.can_remove_spec(tc.expected_cluster_spec):
+                return tc
+
+        # if no test use less nodes than the available count, return an arbitrary test
+        if len(self._test_context_list) > 0:
+            return self._test_context_list[-1]
+
+        return None
+
+    def next(self):
+        if len(self) == 0:
+            raise StopIteration("Scheduler is empty.")
+
+        tc = self.peek()
+
+        if tc is None:
+            raise RuntimeError("No tests can currently be scheduled.")
+
+        self._test_context_list.remove(tc)
+
+        self._cost_test_dict[tc.expected_num_nodes].remove(tc)
+        if self._cost_test_dict[tc.expected_num_nodes] == set():
+            self._cost_test_dict.remove(tc.expected_num_nodes)
         return tc
