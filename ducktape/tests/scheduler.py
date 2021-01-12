@@ -105,7 +105,7 @@ class GreedyTestScheduler(AbstractTestScheduler):
         super().__init__(test_contexts, cluster)
 
         self._cost_test_dict = defaultdict(set)
-        for test in self.test_contexts:
+        for test in self._test_context_list:
             self._cost_test_dict[test.expected_num_nodes].add(test)
 
     def __len__(self):
