@@ -14,8 +14,6 @@
 
 
 from collections import defaultdict
-from re import L
-
 
 class AbstractTestScheduler(object):
     def __init__(self, test_contexts, cluster):
