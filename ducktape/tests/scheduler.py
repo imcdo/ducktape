@@ -135,10 +135,6 @@ class GreedyTestScheduler(AbstractTestScheduler):
             if self.cluster.available().nodes.can_remove_spec(tc.expected_cluster_spec):
                 return tc
 
-        # if no test use less nodes than the available count, return an arbitrary test
-        if len(self._test_context_list) > 0:
-            return self._test_context_list[-1]
-
         return None
 
     def next(self):
