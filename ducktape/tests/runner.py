@@ -100,10 +100,10 @@ class TestRunner(object):
         self.exit_first = self.session_context.exit_first
 
         self.main_process_pid = os.getpid()
-        # if self.max_parallel > 1:
-        #     self.scheduler = GreedyTestScheduler(tests, self.cluster)
-        # else:
-        self.scheduler = TestScheduler(tests, self.cluster)
+        if self.max_parallel > 1:
+            self.scheduler = GreedyTestScheduler(tests, self.cluster)
+        else:
+            self.scheduler = TestScheduler(tests, self.cluster)
 
         self.test_counter = 1
         self.total_tests = len(self.scheduler)
