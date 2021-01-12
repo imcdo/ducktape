@@ -44,7 +44,7 @@ class AbstractTestScheduler(object):
     def next(self):
         raise NotImplementedError()
 
-class LargestTestScheduler(AbstractTestScheduler):
+class TestScheduler(AbstractTestScheduler):
     """This class tracks tests which are scheduled to run, and provides an ordering based on the current cluster state.
 
     The ordering is "on-demand"; calling next returns the largest cluster user which fits in the currently
@@ -102,7 +102,7 @@ class LargestTestScheduler(AbstractTestScheduler):
         self._test_context_list.remove(tc)
         return tc
 
-class GreedyTestScheduler(TestScheduler):
+class GreedyTestScheduler(AbstractTestScheduler):
     def __init__(self, test_contexts, cluster):
         super().__init__(test_contexts, cluster)
 
