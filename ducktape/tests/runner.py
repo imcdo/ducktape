@@ -56,9 +56,8 @@ class Receiver(object):
         self.port = self.socket.bind_to_random_port(addr="tcp://*", min_port=self.min_port, max_port=self.max_port + 1,
                                                     max_tries=2 * (self.max_port + 1 - self.min_port))
 
-    def recv(self, timeout=1):
-        if timeout:
-            self.socket.RCVTIMEO = timeout
+    def recv(self, timeout=60000):
+        self.socket.RCVTIMEO = timeout
         message = self.socket.recv()
         return self.serde.deserialize(message)
 
