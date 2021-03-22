@@ -21,7 +21,6 @@ import signal
 import time
 import traceback
 import zmq
-import select
 
 from ducktape.tests.serde import SerDe
 from ducktape.tests.test import TestContext
@@ -57,13 +56,10 @@ class Receiver(object):
         self.port = self.socket.bind_to_random_port(addr="tcp://*", min_port=self.min_port, max_port=self.max_port + 1,
                                                     max_tries=2 * (self.max_port + 1 - self.min_port))
 
-    def recv(self, timeout=.001):
-        if not timeout:
-            ready = select.select([self.socket], [], [], timeout)
-            if ready[0]:
-                message = self.socket.recv()
-        else:
-            message = self.socket.recv()
+    def recv(self, timeout=1):
+        if timeout:
+            self.socket.RCVTIMEO = timeout
+        message = self.socket.recv()
         return self.serde.deserialize(message)
 
     def send(self, event):
