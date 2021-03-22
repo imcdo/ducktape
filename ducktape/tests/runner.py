@@ -48,6 +48,7 @@ class Receiver(object):
 
         self.zmq_context = zmq.Context()
         self.socket = self.zmq_context.socket(zmq.REP)
+        self.socket.settimeout(.001)
 
     def start(self):
         """Bind to a random port in the range [self.min_port, self.max_port], inclusive
