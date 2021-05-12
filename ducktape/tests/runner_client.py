@@ -210,9 +210,11 @@ class RunnerClient(object):
         self.profile = pyinstrument.Profiler()
 
         self.log(logging.INFO, "Setting up...")
-        self.profile.start()
-        self.test.setup()
-        self.profile.stop()
+        try:
+            self.profile.start()
+            self.test.setup()
+        finally:
+            self.profile.stop()
 
     def run_test(self):
         """Run the test!
@@ -221,9 +223,11 @@ class RunnerClient(object):
         instantiated test object as its argument.
         """
         self.log(logging.INFO, "Running...")
-        self.profile.start()
-        result = self.test_context.function(self.test)
-        self.profile.stop()
+        try:
+            self.profile.start()
+            result = self.test_context.function(self.test)
+        finally:
+            self.profile.stop()
         return result
 
     def _exc_msg(self, e):
@@ -252,9 +256,11 @@ class RunnerClient(object):
 
         if teardown_services:
             def _teardown():
-                self.profile.start()
-                self.test.teardown()
-                self.profile.stop()
+                try:
+                    self.profile.start()
+                    self.test.teardown()
+                finally:
+                    self.profile.stop()
             self._do_safely(_teardown, "Error running teardown method:")
             # stop services
             self._do_safely(services.stop_all, "Error stopping services:")
@@ -298,6 +304,7 @@ class Sender(object):
     NUM_RETRIES = 5
 
     def __init__(self, server_host, server_port, message_supplier, logger):
+        self.profile = None
         self.serde = SerDe()
         self.server_endpoint = "tcp://%s:%s" % (str(server_host), str(server_port))
         self.zmq_context = zmq.Context()
@@ -308,7 +315,6 @@ class Sender(object):
         self.logger = logger
 
         self._init_socket()
-        self.profile = None
 
     def _init_socket(self):
         self.socket = self.zmq_context.socket(zmq.REQ)
