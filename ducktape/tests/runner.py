@@ -37,6 +37,8 @@ from ducktape.utils import persistence
 import pyinstrument
 import json
 from collections import defaultdict
+from ducktape.errors import TimeoutError
+
 
 class Receiver(object):
     def __init__(self, min_port, max_port):
@@ -60,8 +62,15 @@ class Receiver(object):
         self.port = self.socket.bind_to_random_port(addr="tcp://*", min_port=self.min_port, max_port=self.max_port + 1,
                                                     max_tries=2 * (self.max_port + 1 - self.min_port))
 
-    def recv(self):
-        message = self.socket.recv()
+    def recv(self, timeout=1800000):
+        if timeout is None:
+            # use default value of 1800000 or 30 minutes
+            timeout = 1800000
+        self.socket.RCVTIMEO = timeout
+        try:
+            message = self.socket.recv()
+        except zmq.Again:
+            raise TimeoutError("runner client unresponsive")
         return self.serde.deserialize(message)
 
     def send(self, event):
@@ -210,7 +219,7 @@ class TestRunner(object):
                     self._run_single_test(next_test_context)
                 if self._expect_client_requests:
                     try:
-                        event = self.receiver.recv()
+                        event = self.receiver.recv(timeout=self.session_context.test_runner_timeout)
                         self._handle(event)
                     except Exception as e:
                         err_str = "Exception receiving message: %s: %s" % (str(type(e)), str(e))
@@ -260,7 +269,8 @@ class TestRunner(object):
                 current_test_counter,
                 TestContext.logger_name(test_context, current_test_counter),
                 TestContext.results_dir(test_context, current_test_counter),
-                self.session_context.debug
+                self.session_context.debug,
+                self.session_context.fail_bad_cluster_utilization
             ])
 
         self._client_procs[test_key] = proc

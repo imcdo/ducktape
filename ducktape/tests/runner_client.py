@@ -31,15 +31,16 @@ from ducktape.tests.result import TestResult, IGNORE, PASS, FAIL
 from ducktape.utils.local_filesystem_utils import mkdir_p
 
 
-def run_client(server_hostname, server_port, test_id, test_index, logger_name, log_dir, debug):
-    client = RunnerClient(server_hostname, server_port, test_id, test_index, logger_name, log_dir, debug)
+def run_client(*args, **kwargs):
+    client = RunnerClient(*args, **kwargs)
     client.run()
 
 
 class RunnerClient(object):
     """Run a single test"""
 
-    def __init__(self, server_hostname, server_port, test_id, test_index, logger_name, log_dir, debug):
+    def __init__(self, server_hostname, server_port, test_id,
+                 test_index, logger_name, log_dir, debug, fail_bad_cluster_utilization):
         signal.signal(signal.SIGTERM, self._sigterm_handler)  # register a SIGTERM handler
 
         self.serde = SerDe()
@@ -47,6 +48,7 @@ class RunnerClient(object):
         self._log_dir = log_dir
         self.runner_port = server_port
 
+        self.fail_bad_cluster_utilization = fail_bad_cluster_utilization
         self.test_id = test_id
         self.test_index = test_index
         self.id = "test-runner-%d-%d" % (os.getpid(), id(self))
@@ -157,6 +159,8 @@ class RunnerClient(object):
                 if service_errors:
                     summary += "\n\n" + service_errors
 
+            test_status, summary = self._check_cluster_utilization(test_status, summary)
+
             result = TestResult(
                 self.test_context,
                 self.test_index,
@@ -167,7 +171,6 @@ class RunnerClient(object):
                 start_time,
                 stop_time)
 
-            self._check_cluster_utilization()
             self.log(logging.INFO, "Summary: %s" % str(result.summary))
             self.log(logging.INFO, "Data: %s" % str(result.data))
 
@@ -181,11 +184,26 @@ class RunnerClient(object):
             self.test_context = None
             self.test = None
 
-    def _check_cluster_utilization(self):
+    def _check_cluster_utilization(self, result, summary):
+        """Checks if the number of nodes used by a test is less than the number of
+        nodes requested by the test. If this is the case and we wish to fail
+        on bad cluster utilization, the result value is failed. Will also print
+        a warning if the test passes and the node utilization doesn't match.
+        """
         max_used = self.cluster.max_used()
         total = len(self.cluster.all())
         if max_used < total:
-            self.log(logging.WARN, "Test requested %d nodes, used only %d" % (total, max_used))
+            message = "Test requested %d nodes, used only %d" % (total, max_used)
+            if self.fail_bad_cluster_utilization:
+                # only check node utilization on test pass
+                if result == PASS:
+                    self.log(logging.INFO, "FAIL: " + message)
+
+                result = FAIL
+                summary += message
+            else:
+                self.log(logging.WARN, message)
+        return result, summary
 
     def setup_test(self):
         """start services etc"""
