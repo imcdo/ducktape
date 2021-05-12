@@ -142,7 +142,6 @@ class RunnerClient(object):
             self.log(logging.INFO, "PASS")
 
         except BaseException as e:
-            self.profile.stop()
 
             test_status = FAIL
             err_trace = self._exc_msg(e)
