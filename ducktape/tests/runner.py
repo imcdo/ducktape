@@ -14,6 +14,7 @@
 
 from collections import namedtuple
 import copy
+from functools import partialmethod
 import logging
 import multiprocessing
 import os
@@ -119,7 +120,8 @@ class TestRunner(object):
         self._test_context = persistence.make_dict(**{t.test_id: t for t in tests})
         self._test_cluster = {}  # Track subcluster assigned to a particular TestKey
         self._client_procs = {}  # track client processes running tests
-        self.active_tests = {}
+        self.active_tests = set()
+        self.finished_tests = set()
         self.finished_tests = {}
         self.test_schedule_log = []
 
@@ -258,7 +260,7 @@ class TestRunner(object):
 
         # Test is considered "active" as soon as we start it up in a subprocess
         test_key = TestKey(test_context.test_id, current_test_counter)
-        self.active_tests[test_key] = True
+        self.active_tests.add(test_key)
         self.test_schedule_log.append(test_key)
 
         proc = multiprocessing.Process(
@@ -329,7 +331,16 @@ class TestRunner(object):
         if result.test_status == FAIL and self.exit_first:
             self.stop_testing = True
 
+        # if key is not in active tests it was probably already removed.
+        if test_key in self.active_tests:
+            if test_key in self.finished_tests:
+                self._warning(f"trying to finish test '{test_key}' which is no longer marked as active")
+            else:
+                self._warning(f"trying to finish test '{test_key}' which was never marked as active")
+            return
+
         # Transition this test from running to finished
+        self.active_tests.remove(test_key)
         del self.active_tests[test_key]
         self.finished_tests[test_key] = event
         self.results.append(result)
@@ -355,7 +366,8 @@ class TestRunner(object):
 
         if self._should_print_separator:
             terminal_width, y = get_terminal_size()
-            self._log(logging.INFO, "~" * int(2 * terminal_width / 3))
+            self._info("~" * int(2 * terminal_width / 3))
+        self.finished_tests.add(test_key)
 
     @property
     def _should_print_separator(self):
@@ -376,3 +388,8 @@ class TestRunner(object):
     def _log(self, log_level, msg, *args, **kwargs):
         """Log to the service log of the current test."""
         self.session_logger.log(log_level, msg, *args, **kwargs)
+
+    _warning = partialmethod(_log, logging.WARNING)
+    _info = partialmethod(_log, logging.INFO)
+    _debug = partialmethod(_log, logging.DEBUG)
+    _error = partialmethod(_log, logging.ERROR)
