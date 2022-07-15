@@ -121,7 +121,6 @@ class TestRunner(object):
         self._test_cluster = {}  # Track subcluster assigned to a particular TestKey
         self._client_procs = {}  # track client processes running tests
         self.active_tests = set()
-        self.finished_tests = set()
         self.finished_tests = {}
         self.test_schedule_log = []
 
@@ -367,7 +366,6 @@ class TestRunner(object):
         if self._should_print_separator:
             terminal_width, y = get_terminal_size()
             self._info("~" * int(2 * terminal_width / 3))
-        self.finished_tests.add(test_key)
 
     @property
     def _should_print_separator(self):
