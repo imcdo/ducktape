@@ -334,7 +334,7 @@ class TestRunner(object):
         self._warning(f"finishing test {test_key}, active tests {self.active_tests}")
 
         # if key is not in active tests it was probably already removed.
-        if test_key in self.active_tests:
+        if test_key not in self.active_tests:
             if test_key in self.finished_tests:
                 self._warning(f"trying to finish test '{test_key}' which is no longer marked as active")
             else:
