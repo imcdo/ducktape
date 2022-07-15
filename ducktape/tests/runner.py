@@ -278,6 +278,7 @@ class TestRunner(object):
 
         self._client_procs[test_key] = proc
         proc.start()
+        self._warning(f"starting test {test_key}, active tests {self.active_tests}")
 
     def _preallocate_subcluster(self, test_context):
         """Preallocate the subcluster which will be used to run the test.
@@ -329,6 +330,8 @@ class TestRunner(object):
         result = event['result']
         if result.test_status == FAIL and self.exit_first:
             self.stop_testing = True
+
+        self._warning(f"finishing test {test_key}, active tests {self.active_tests}")
 
         # if key is not in active tests it was probably already removed.
         if test_key in self.active_tests:
