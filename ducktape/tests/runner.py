@@ -339,7 +339,6 @@ class TestRunner(object):
                 self._warning(f"trying to finish test '{test_key}' which is no longer marked as active")
             else:
                 self._warning(f"trying to finish test '{test_key}' which was never marked as active")
-            return
 
         # Transition this test from running to finished
         self.active_tests.remove(test_key)
