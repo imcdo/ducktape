@@ -343,7 +343,7 @@ class TestRunner(object):
 
         # Transition this test from running to finished
         self.active_tests.remove(test_key)
-        del self.active_tests[test_key]
+        # del self.active_tests[test_key]
         self.finished_tests[test_key] = event
         self.results.append(result)
 
