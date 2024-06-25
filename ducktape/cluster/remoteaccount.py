@@ -199,6 +199,8 @@ class RemoteAccount(HttpMixin):
             pkey=key,
             look_for_keys=False,
             timeout=self.ssh_config.connecttimeout,
+            # Force ssh-rsa.
+            disabled_algorithms=['rsa-sha2-512', 'rsa-sha2-256']
         )
 
         if self._ssh_client:
