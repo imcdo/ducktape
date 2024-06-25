@@ -29,8 +29,6 @@ from ducktape.utils.http_utils import HttpMixin
 from ducktape.utils.util import wait_until
 from ducktape.errors import DucktapeError
 
-logging.getLogger("paramiko").setLevel(logging.DEBUG)
-paramiko.common.logging.basicConfig(level=paramiko.common.DEBUG)
 
 def check_ssh(method):
     def wrapper(self, *args, **kwargs):
@@ -186,10 +184,13 @@ class RemoteAccount(HttpMixin):
     def _set_ssh_client(self):
         client = SSHClient()
         client.set_missing_host_key_policy(IgnoreMissingHostKeyPolicy())
-        # client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        # Load key if it is configured.
         self._log(logging.DEBUG, "ssh_config: %s" % str(self.ssh_config))
-        with open(self.ssh_config.identityfile) as f:
-            key = RSAKey.from_private_key(f)
+        key = None
+        if self.ssh_config.identityfile is not None:
+            with open(self.ssh_config.identityfile) as f:
+                key = RSAKey.from_private_key(f)
 
         client.connect(
             hostname=self.ssh_config.hostname,
